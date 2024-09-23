@@ -73,17 +73,58 @@ std::vector<std::unordered_map<std::string, std::string>> Table::selectMultipleW
     std::vector<std::unordered_map<std::string, std::string>> result;
     for (const auto& pair : data) {
         const Record& record = pair.second;
-        if (record.getField(conditionColumn) == conditionValue) {
+        AnonType fieldValue = record.getField(conditionColumn);
+
+        // Debugging statements
+        std::cout << "Checking record ID: " << pair.first << std::endl;
+        std::cout << "Field value: " << std::visit(makeStringFunctor(), fieldValue) << std::endl;
+        std::cout << "Condition value: " << std::visit(makeStringFunctor(), conditionValue) << std::endl;
+
+        bool match = false;
+        if (fieldValue.index() == conditionValue.index()) {
+            match = fieldValue == conditionValue;
+        } else {
+            // Handle comparison between different types
+            if (std::holds_alternative<int>(fieldValue) && std::holds_alternative<std::string>(conditionValue)) {
+                match = std::to_string(std::get<int>(fieldValue)) == std::get<std::string>(conditionValue);
+            } else if (std::holds_alternative<double>(fieldValue) && std::holds_alternative<std::string>(conditionValue)) {
+                match = std::to_string(std::get<double>(fieldValue)) == std::get<std::string>(conditionValue);
+            } else if (std::holds_alternative<std::string>(fieldValue) && std::holds_alternative<int>(conditionValue)) {
+                match = std::get<std::string>(fieldValue) == std::to_string(std::get<int>(conditionValue));
+            } else if (std::holds_alternative<std::string>(fieldValue) && std::holds_alternative<double>(conditionValue)) {
+                match = std::get<std::string>(fieldValue) == std::to_string(std::get<double>(conditionValue));
+            }
+        }
+
+        if (match) {
             std::unordered_map<std::string, std::string> row;
             for (const auto& column : columns) {
                 AnonType value = record.getField(column);
                 row[column] = std::visit(makeStringFunctor(), value);
             }
             result.push_back(row);
+
+            // Debugging statement
+            std::cout << "Record matched. Collected row: ";
+            for (const auto& col : columns) {
+                std::cout << col << ": " << row[col] << " ";
+            }
+            std::cout << std::endl;
         }
     }
+
+    // Debugging statements
+    std::cout << "Final query results for " << conditionColumn << " = " << std::visit(makeStringFunctor(), conditionValue) << ":\n";
+    for (const auto& row : result) {
+        for (const auto& col : columns) {
+            std::cout << col << ": " << row.at(col) << "\n";
+        }
+        std::cout << "\n";
+    }
+
     return result;
 }
+
 
 void Table::printAll(std::ostringstream& os) {
     for (const auto& pair : data) {

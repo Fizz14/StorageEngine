@@ -39,6 +39,16 @@ void handleHttpsRequest(SOCKET clientSocket, Database& database, const std::stri
                     columns.push_back(column);
                 }
 
+                // Debugging statements
+                std::cout << "Table Name: " << tableName << std::endl;
+                std::cout << "Columns: ";
+                for (const auto& col : columns) {
+                    std::cout << col << " ";
+                }
+                std::cout << std::endl;
+                std::cout << "Condition Column: " << conditionColumn << std::endl;
+                std::cout << "Condition Value: " << conditionValue << std::endl;
+
                 // Perform the query
                 try {
                     Table& table = database.getTable(tableName);
