@@ -1,24 +1,30 @@
 #include "network.h"
 
-void handleHttpsRequest(SOCKET clientSocket, Table& table, const std::string& request) {
-    try {
-        std::istringstream requestStream(request);
-        std::string method, path, version;
-        requestStream >> method >> path >> version;
+// Existing methods...
 
-        std::ostringstream responseStream;
-        responseStream << "HTTP/1.1 200 OK\r\n";
-        responseStream << "Content-Type: text/plain\r\n";
-        responseStream << "Connection: close\r\n\r\n";
+void handleHttpsRequest(SOCKET clientSocket, Database& database, const std::string& request) {
+    std::istringstream requestStream(request);
+    std::string method, path, version;
+    requestStream >> method >> path >> version;
 
-        // Parse the path to extract query parameters
-        size_t pos = path.find("?");
-        if (pos != std::string::npos) {
-            std::string queryString = path.substr(pos + 1);
-            size_t separatorPos = queryString.find("|");
-            if (separatorPos != std::string::npos) {
-                std::string columnsStr = queryString.substr(0, separatorPos);
-                std::string conditionStr = queryString.substr(separatorPos + 1);
+    std::ostringstream responseStream;
+    responseStream << "HTTP/1.1 200 OK\r\n";
+    responseStream << "Content-Type: text/plain\r\n";
+    responseStream << "Connection: close\r\n\r\n";
+
+    // Parse the path to extract query parameters
+    size_t pos = path.find("?");
+    if (pos != std::string::npos) {
+        std::string queryString = path.substr(pos + 1);
+        size_t separatorPos = queryString.find("|");
+        if (separatorPos != std::string::npos) {
+            std::string tableName = queryString.substr(0, separatorPos);
+            std::string columnsAndCondition = queryString.substr(separatorPos + 1);
+
+            size_t conditionPos = columnsAndCondition.find("|");
+            if (conditionPos != std::string::npos) {
+                std::string columnsStr = columnsAndCondition.substr(0, conditionPos);
+                std::string conditionStr = columnsAndCondition.substr(conditionPos + 1);
 
                 std::istringstream conditionStream(conditionStr);
                 std::string conditionColumn, conditionValue;
@@ -34,15 +40,20 @@ void handleHttpsRequest(SOCKET clientSocket, Table& table, const std::string& re
                 }
 
                 // Perform the query
-                std::vector<std::unordered_map<std::string, std::string>> results = table.selectMultipleWhere(columns, conditionColumn, conditionValue);
+                try {
+                    Table& table = database.getTable(tableName);
+                    std::vector<std::unordered_map<std::string, std::string>> results = table.selectMultipleWhere(columns, conditionColumn, conditionValue);
 
-                // Format the results
-                responseStream << "Query results for " << conditionColumn << " = " << conditionValue << ":\n";
-                for (const auto& row : results) {
-                    for (const auto& col : columns) {
-                        responseStream << col << ": " << row.at(col) << "\n";
+                    // Format the results
+                    responseStream << "Query results for " << conditionColumn << " = " << conditionValue << ":\n";
+                    for (const auto& row : results) {
+                        for (const auto& col : columns) {
+                            responseStream << col << ": " << row.at(col) << "\n";
+                        }
+                        responseStream << "\n";
                     }
-                    responseStream << "\n";
+                } catch (const std::exception& e) {
+                    responseStream << "Error: " << e.what() << "\n";
                 }
             } else {
                 responseStream << "Invalid query format.\n";
@@ -50,30 +61,29 @@ void handleHttpsRequest(SOCKET clientSocket, Table& table, const std::string& re
         } else {
             responseStream << "Invalid query format.\n";
         }
-
-        std::string response = responseStream.str();
-        send(clientSocket, response.c_str(), response.size(), 0);
-        closesocket(clientSocket);
-    } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << std::endl;
-        closesocket(clientSocket);
+    } else {
+        responseStream << "Invalid query format.\n";
     }
+
+    std::string response = responseStream.str();
+    send(clientSocket, response.c_str(), response.size(), 0);
+    closesocket(clientSocket);
 }
 
-void handleClient(SOCKET clientSocket, Table& table) {
+void handleClient(SOCKET clientSocket, Database& database) {
     try {
         char buffer[1024] = {0};
         recv(clientSocket, buffer, 1024, 0);
 
         std::string request(buffer);
-        handleHttpsRequest(clientSocket, table, request);
+        handleHttpsRequest(clientSocket, database, request);
     } catch (const std::exception& e) {
         std::cerr << "Exception: " << e.what() << std::endl;
         closesocket(clientSocket);
     }
 }
 
-void startServer(Table& table) {
+void startServer(Database& database) {
     WSADATA wsaData;
     int iResult;
 
@@ -120,7 +130,7 @@ void startServer(Table& table) {
                 WSACleanup();
                 return;
             }
-            std::thread(handleClient, clientSocket, std::ref(table)).detach();
+            std::thread(handleClient, clientSocket, std::ref(database)).detach();
         }
 
         closesocket(serverSocket);

@@ -1,5 +1,6 @@
 #include "database.h"
 
+// Record methods
 void Record::setField(const std::string& column, const AnonType value) {
     fields[column] = value;
 }
@@ -27,15 +28,7 @@ bool Record::checkFieldType(const std::string& column, MyType type) const {
     return false;
 }
 
-
-const std::vector<std::tuple<std::string, MyType>>& Table::getFields() const {
-    return fields;
-}
-
-const std::unordered_map<int, Record>& Table::getData() const {
-    return data;
-}
-
+// Table methods
 void Table::defineField(const std::string& fieldName, MyType type) {
     auto newEntry = std::make_tuple(fieldName, type);
     fields.push_back(newEntry);
@@ -100,4 +93,29 @@ void Table::printAll(std::ostringstream& os) {
             os << std::visit(makeStringFunctor(), field.second) << std::endl;
         }
     }
+}
+
+const std::vector<std::tuple<std::string, MyType>>& Table::getFields() const {
+    return fields;
+}
+
+const std::unordered_map<int, Record>& Table::getData() const {
+    return data;
+}
+
+// Database methods
+void Database::addTable(const std::string& tableName, const Table& table) {
+    tables[tableName] = table;
+}
+
+Table& Database::getTable(const std::string& tableName) {
+    auto it = tables.find(tableName);
+    if (it == tables.end()) {
+        throw std::runtime_error("Table not found: " + tableName);
+    }
+    return it->second;
+}
+
+void Database::removeTable(const std::string& tableName) {
+    tables.erase(tableName);
 }

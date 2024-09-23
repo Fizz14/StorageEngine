@@ -12,8 +12,8 @@
 // Link with Ws2_32.lib
 #pragma comment(lib, "Ws2_32.lib")
 
-void handleClient(SOCKET clientSocket, Table& table);
-void startServer(Table& table);
-void handleHttpsRequest(SOCKET clientSocket, Table& table, const std::string& request);
+void handleClient(SOCKET clientSocket, Database& database);
+void startServer(Database& database);
+void handleHttpsRequest(SOCKET clientSocket, Database& database, const std::string& request);
 
 #endif // NETWORK_H
