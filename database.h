@@ -27,6 +27,7 @@ public:
 
     void setField(const std::string& column, const AnonType value);
     AnonType getField(const std::string& column) const;
+    bool checkFieldType(const std::string& column, MyType type) const;
 };
 
 class Table {

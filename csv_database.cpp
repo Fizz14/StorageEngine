@@ -25,9 +25,33 @@ void CsvDatabase::load(Table& table) {
 
     while (std::getline(file, line)) {
         std::vector<std::string> values = split(line, ',');
+        if (values.size() != headers.size()) {
+            std::cerr << "Mismatch between number of headers and values in line: " << line << std::endl;
+            continue; // Skip this line
+        }
+
         Record record;
         for (size_t i = 0; i < headers.size(); ++i) {
-            record.setField(headers[i], values[i]);
+            const auto& fieldName = headers[i];
+            const auto& fieldType = table.getFields()[i];
+
+            try {
+                // Check type and set field
+                switch (std::get<1>(fieldType)) {
+                    case MyType::INT:
+                        record.setField(fieldName, std::stoi(values[i]));
+                        break;
+                    case MyType::DOUBLE:
+                        record.setField(fieldName, std::stod(values[i]));
+                        break;
+                    case MyType::STRING:
+                        record.setField(fieldName, values[i]);
+                        break;
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "Error setting field " << fieldName << " with value " << values[i] << ": " << e.what() << std::endl;
+                throw; // Re-throw the exception to stop loading
+            }
         }
         table.insert(std::stoi(values[0]), record); // Assuming the first column is the ID
     }

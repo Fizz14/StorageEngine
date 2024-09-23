@@ -12,6 +12,22 @@ AnonType Record::getField(const std::string& column) const {
     return "";
 }
 
+bool Record::checkFieldType(const std::string& column, MyType type) const {
+    auto it = fields.find(column);
+    if (it != fields.end()) {
+        switch (type) {
+            case MyType::INT:
+                return std::holds_alternative<int>(it->second);
+            case MyType::DOUBLE:
+                return std::holds_alternative<double>(it->second);
+            case MyType::STRING:
+                return std::holds_alternative<std::string>(it->second);
+        }
+    }
+    return false;
+}
+
+
 const std::vector<std::tuple<std::string, MyType>>& Table::getFields() const {
     return fields;
 }
