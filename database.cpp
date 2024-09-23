@@ -12,6 +12,14 @@ AnonType Record::getField(const std::string& column) const {
     return "";
 }
 
+const std::vector<std::tuple<std::string, MyType>>& Table::getFields() const {
+    return fields;
+}
+
+const std::unordered_map<int, Record>& Table::getData() const {
+    return data;
+}
+
 void Table::defineField(const std::string& fieldName, MyType type) {
     auto newEntry = std::make_tuple(fieldName, type);
     fields.push_back(newEntry);

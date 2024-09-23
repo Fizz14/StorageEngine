@@ -31,6 +31,8 @@ public:
 
 class Table {
 public:
+    const std::vector<std::tuple<std::string, MyType>>& getFields() const;
+    const std::unordered_map<int, Record>& getData() const;
     void defineField(const std::string& fieldName, MyType type);
     void createIndex(const std::string& column);
     void insert(int id, const Record& record);
