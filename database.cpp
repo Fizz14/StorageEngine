@@ -75,11 +75,6 @@ std::vector<std::unordered_map<std::string, std::string>> Table::selectMultipleW
         const Record& record = pair.second;
         AnonType fieldValue = record.getField(conditionColumn);
 
-        // Debugging statements
-        std::cout << "Checking record ID: " << pair.first << std::endl;
-        std::cout << "Field value: " << std::visit(makeStringFunctor(), fieldValue) << std::endl;
-        std::cout << "Condition value: " << std::visit(makeStringFunctor(), conditionValue) << std::endl;
-
         bool match = false;
         if (fieldValue.index() == conditionValue.index()) {
             match = fieldValue == conditionValue;
@@ -103,28 +98,11 @@ std::vector<std::unordered_map<std::string, std::string>> Table::selectMultipleW
                 row[column] = std::visit(makeStringFunctor(), value);
             }
             result.push_back(row);
-
-            // Debugging statement
-            std::cout << "Record matched. Collected row: ";
-            for (const auto& col : columns) {
-                std::cout << col << ": " << row[col] << " ";
-            }
-            std::cout << std::endl;
         }
-    }
-
-    // Debugging statements
-    std::cout << "Final query results for " << conditionColumn << " = " << std::visit(makeStringFunctor(), conditionValue) << ":\n";
-    for (const auto& row : result) {
-        for (const auto& col : columns) {
-            std::cout << col << ": " << row.at(col) << "\n";
-        }
-        std::cout << "\n";
     }
 
     return result;
 }
-
 
 void Table::printAll(std::ostringstream& os) {
     for (const auto& pair : data) {
